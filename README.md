@@ -1,0 +1,2 @@
+# kodtest
+Redis is used. 
