@@ -1,8 +1,8 @@
 # kodtest
 
 Redis is used. 
-When given GET and POST requests,
-Output from req_tester.py
+When using GET and POST requests,
+the output from req_tester.py is:
 
 b'POST successful'
 
