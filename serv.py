@@ -2,33 +2,41 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from position_api import *
 import logging
 import json
+import re
 
 
 class RequestHandler(BaseHTTPRequestHandler):
+    POST_POS_PATTERN = re.compile(r'^/position/\w+/\w+/\d+$')
+    GET_POS_PATTERN = re.compile(r'^/position/\w+/\w+$')
+    GET_ALL_POS_PATTERN = re.compile(r'^/position/\w+$')
+
     def do_GET(self):
 
-        path_parts = list(filter(None, self.path.split('/')))
-        if path_parts[0] == "position" and len(path_parts) == 3:  # ['position', 'userX', 'assetX']
-            # Return User's asset info on position
-            self.send_response(200)
-            self.send_header('content-type', 'text/html')
-            self.end_headers()
-
+        if re.search(self.GET_POS_PATTERN, self.path):
+            path_parts = list(filter(None, self.path.split('/')))  # ['position', 'userX', 'assetX']
             userID = path_parts[1]
             assetID = path_parts[2]
             position = get_position_from_storage(userID, assetID)
             if position:
-                # print(f'{userID} may continue watching {assetID} from {position} seconds in.)'
+                # Return User's asset info on position
+                self.send_response(200)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
                 return self.wfile.write(position.encode())
-            msg = f'No stored position for Asset:{assetID} by User:{userID}'
+            # Return User's asset info on position
+            self.send_response(404)
+            self.send_header('content-type', 'text/html')
+            self.end_headers()
+            msg = f'No stored position for Asset->{assetID} by User->{userID}'
             return self.wfile.write(msg.encode())
 
-        if path_parts[0] == "position" and len(path_parts) == 2:  # ['position', 'userX']
+        if re.search(self.GET_ALL_POS_PATTERN, self.path):
             # Return User's asset info on position
             self.send_response(200)
             self.send_header('content-type', 'text/html')
             self.end_headers()
 
+            path_parts = list(filter(None, self.path.split('/')))  # ['position', 'userX']
             userID = path_parts[1]
             asset_list = generate_list(userID)
             pos_list = []
@@ -39,10 +47,17 @@ class RequestHandler(BaseHTTPRequestHandler):
             pos_list_json = json.dumps(pos_list)
             return self.wfile.write(pos_list_json.encode())
 
+        self.send_response(404)
+        # Add response headers.
+        self.send_header('Content-Type', 'text/html')
+        self.end_headers()
+        # Add response content.
+        self.wfile.write('Sorry! Wrong path format.'.encode('utf-8'))
+
     def do_POST(self):
 
-        path_parts = list(filter(None, self.path.split('/')))
-        if path_parts[0] == "position" and len(path_parts) == 4:  # ['position', 'userX', 'assetX', 'XXX']
+        if re.search(self.POST_POS_PATTERN, self.path):
+            path_parts = list(filter(None, self.path.split('/')))  # ['position', 'userX', 'assetX', 'XXX']
             userID = path_parts[1]
             assetID = path_parts[2]
             position = path_parts[3]
@@ -58,6 +73,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header('content-type', 'text/html')
             self.end_headers()
             return self.wfile.write("POST successful".encode())
+
+        self.send_response(404)
+        self.send_header('content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write("POST failure".encode())
 
 
 # DRIVER FUNCTION
