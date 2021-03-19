@@ -5,7 +5,7 @@ FORMAT_STRING = "%d-%b-%Y (%H:%M:%S.%f)"
 
 
 def generate_key(userID, assetID):
-    return f"{userID}:{assetID}"
+    return ':'.join([userID, assetID])
 
 
 def add_to_storage(userID, assetID, position):
