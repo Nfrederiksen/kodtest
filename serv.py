@@ -7,7 +7,7 @@ import json
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
 
-        path_parts = self.path.split('/')[1:]
+        path_parts = list(filter(None, self.path.split('/')))
         if path_parts[0] == "position" and len(path_parts) == 3:  # ['position', 'userX', 'assetX']
             # Return User's asset info on position
             self.send_response(200)
@@ -19,10 +19,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             position = get_position_from_storage(userID, assetID)
             if position:
                 # print(f'{userID} may continue watching {assetID} from {position} seconds in.)'
-                self.wfile.write(position.encode())
-            else:
-                msg = f'No stored position for Asset:{assetID} by User:{userID}'
-                self.wfile.write(msg.encode())
+                return self.wfile.write(position.encode())
+            msg = f'No stored position for Asset:{assetID} by User:{userID}'
+            return self.wfile.write(msg.encode())
 
         if path_parts[0] == "position" and len(path_parts) == 2:  # ['position', 'userX']
             # Return User's asset info on position
@@ -38,12 +37,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 pos_list.append(asset[1])
             # Convert python list to JSON list
             pos_list_json = json.dumps(pos_list)
-            self.wfile.write(pos_list_json.encode())
-
+            return self.wfile.write(pos_list_json.encode())
 
     def do_POST(self):
 
-        path_parts = self.path.split('/')[1:]
+        path_parts = list(filter(None, self.path.split('/')))
         if path_parts[0] == "position" and len(path_parts) == 4:  # ['position', 'userX', 'assetX', 'XXX']
             userID = path_parts[1]
             assetID = path_parts[2]
@@ -54,13 +52,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_response(404)
                 self.send_header('content-type', 'text/html')
                 self.end_headers()
-                self.wfile.write("POST failure".encode())
-            else:
-                self.send_response(200)
-                self.send_header('content-type', 'text/html')
-                self.send_header('Location', f'/{path_parts[1]}/{path_parts[2]}')
-                self.end_headers()
-                self.wfile.write("POST successful".encode())
+                return self.wfile.write("POST failure".encode())
+
+            self.send_response(200)
+            self.send_header('content-type', 'text/html')
+            self.end_headers()
+            return self.wfile.write("POST successful".encode())
+
 
 # DRIVER FUNCTION
 def main():
